@@ -1,0 +1,33 @@
+name: CI
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: github.workflow-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  calidad:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code Checkout
+        uses: actions/checkout@v4
+      - name: Node.js setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.2'
+          cache: 'npm'
+      - name: Instalar dependencias
+        run: npm run install:all
+      - name: Verificar formato
+        run: npm run format:check
+      - name: Analisis estatico
+        run: npm run lint
+      - name: Auditoria de seguridad
+        run: npm audit --audit-level=high || true
+      - name: Pruebas con cobertura
+        run: npm test
+      - name: Build
+        run: npm run build

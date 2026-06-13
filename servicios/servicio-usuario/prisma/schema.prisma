@@ -1,0 +1,514 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+  schemas           = ["bebras"]
+}
+
+model auditoria {
+  id             BigInt    @id @default(autoincrement())
+  usuario_id     String?   @db.Uuid
+  accion         String    @db.VarChar(200)
+  tabla          String?   @db.VarChar(100)
+  registro_id    String?   @db.Uuid
+  detalle        String?
+  ip             String?   @db.Inet
+  creado_en      DateTime  @default(now()) @db.Timestamptz(6)
+  actualizado_en DateTime  @default(now()) @db.Timestamptz(6)
+  esta_activo    Boolean   @default(true)
+  usuarios       usuarios? @relation(fields: [usuario_id], references: [id], onUpdate: NoAction)
+
+  @@index([tabla], map: "idx_auditoria_tabla")
+  @@index([usuario_id], map: "idx_auditoria_usuario")
+  @@schema("bebras")
+}
+
+model categorias {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre            String              @db.VarChar(150)
+  descripcion       String?
+  padre_id          String?             @db.Uuid
+  creado_en         DateTime            @default(now()) @db.Timestamptz(6)
+  actualizado_en    DateTime            @default(now()) @db.Timestamptz(6)
+  esta_activo       Boolean             @default(true)
+  categorias        categorias?         @relation("categoriasTocategorias", fields: [padre_id], references: [id], onUpdate: NoAction)
+  other_categorias  categorias[]        @relation("categoriasTocategorias")
+  preguntas         preguntas[]
+  sesiones_practica sesiones_practica[]
+
+  @@schema("bebras")
+}
+
+model coordinadores_institucion {
+  institucion_id String        @db.Uuid
+  usuario_id     String        @db.Uuid
+  asignado_en    DateTime      @default(now()) @db.Timestamptz(6)
+  actualizado_en DateTime      @default(now()) @db.Timestamptz(6)
+  creado_en      DateTime      @default(now()) @db.Timestamptz(6)
+  esta_activo    Boolean       @default(true)
+  instituciones  instituciones @relation(fields: [institucion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  usuarios       usuarios      @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([institucion_id, usuario_id])
+  @@schema("bebras")
+}
+
+model detalle_resultados {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  intento_id        String             @db.Uuid
+  pregunta_id       String             @db.Uuid
+  opcion_id         String?            @db.Uuid
+  es_correcta       Boolean
+  puntos            Decimal            @default(0) @db.Decimal(5, 2)
+  actualizado_en    DateTime           @default(now()) @db.Timestamptz(6)
+  creado_en         DateTime           @default(now()) @db.Timestamptz(6)
+  esta_activo       Boolean            @default(true)
+  intentos_examen   intentos_examen    @relation(fields: [intento_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  opciones_pregunta opciones_pregunta? @relation(fields: [opcion_id], references: [id], onUpdate: NoAction)
+  preguntas         preguntas          @relation(fields: [pregunta_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([intento_id, pregunta_id])
+  @@index([intento_id], map: "idx_detalle_intento")
+  @@schema("bebras")
+}
+
+model estudiantes {
+  usuario_id        String              @id @db.Uuid
+  institucion_id    String?             @db.Uuid
+  grupo_id          String?             @db.Uuid
+  codigo            String?             @db.VarChar(50)
+  creado_en         DateTime            @default(now()) @db.Timestamptz(6)
+  actualizado_en    DateTime            @default(now()) @db.Timestamptz(6)
+  esta_activo       Boolean             @default(true)
+  grupos            grupos?             @relation(fields: [grupo_id], references: [id], onUpdate: NoAction)
+  instituciones     instituciones?      @relation(fields: [institucion_id], references: [id], onUpdate: NoAction)
+  usuarios          usuarios            @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  intentos_examen   intentos_examen[]
+  sesiones_practica sesiones_practica[]
+
+  @@index([grupo_id], map: "idx_estudiantes_grupo")
+  @@index([institucion_id], map: "idx_estudiantes_institucion")
+  @@schema("bebras")
+}
+
+model etiquetas {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre             String               @unique @db.VarChar(100)
+  actualizado_en     DateTime             @default(now()) @db.Timestamptz(6)
+  creado_en          DateTime             @default(now()) @db.Timestamptz(6)
+  esta_activo        Boolean              @default(true)
+  pregunta_etiquetas pregunta_etiquetas[]
+
+  @@schema("bebras")
+}
+
+model examen_preguntas {
+  examen_id      String    @db.Uuid
+  pregunta_id    String    @db.Uuid
+  orden          Int       @default(0) @db.SmallInt
+  actualizado_en DateTime  @default(now()) @db.Timestamptz(6)
+  creado_en      DateTime  @default(now()) @db.Timestamptz(6)
+  esta_activo    Boolean   @default(true)
+  examenes       examenes  @relation(fields: [examen_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  preguntas      preguntas @relation(fields: [pregunta_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([examen_id, pregunta_id])
+  @@schema("bebras")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model examenes {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titulo           String             @db.VarChar(200)
+  descripcion      String?
+  instrucciones    String?
+  duracion_minutos Int                @db.SmallInt
+  inicio_en        DateTime?          @db.Timestamptz(6)
+  fin_en           DateTime?          @db.Timestamptz(6)
+  puede_reanudar   Boolean            @default(true)
+  esta_activo      Boolean            @default(true)
+  creado_por       String?            @db.Uuid
+  creado_en        DateTime           @default(now()) @db.Timestamptz(6)
+  actualizado_en   DateTime           @default(now()) @db.Timestamptz(6)
+  examen_preguntas examen_preguntas[]
+  usuarios         usuarios?          @relation(fields: [creado_por], references: [id], onUpdate: NoAction)
+  intentos_examen  intentos_examen[]
+
+  @@schema("bebras")
+}
+
+model grupos {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre            String              @db.VarChar(150)
+  institucion_id    String              @db.Uuid
+  esta_activo       Boolean             @default(true)
+  creado_en         DateTime            @default(now()) @db.Timestamptz(6)
+  actualizado_en    DateTime            @default(now()) @db.Timestamptz(6)
+  estudiantes       estudiantes[]
+  instituciones     instituciones       @relation(fields: [institucion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profesores_grupos profesores_grupos[]
+
+  @@schema("bebras")
+}
+
+model instituciones {
+  id                        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre                    String                      @db.VarChar(200)
+  codigo                    String                      @unique @db.VarChar(50)
+  esta_activo               Boolean                     @default(true)
+  creado_en                 DateTime                    @default(now()) @db.Timestamptz(6)
+  actualizado_en            DateTime                    @default(now()) @db.Timestamptz(6)
+  coordinadores_institucion coordinadores_institucion[]
+  estudiantes               estudiantes[]
+  grupos                    grupos[]
+  profesores                profesores[]
+
+  @@schema("bebras")
+}
+
+model intentos_examen {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  examen_id          String               @db.Uuid
+  estudiante_id      String               @db.Uuid
+  estado             estado_intento       @default(pendiente)
+  iniciado_en        DateTime?            @db.Timestamptz(6)
+  finalizado_en      DateTime?            @db.Timestamptz(6)
+  puntaje            Decimal?             @db.Decimal(6, 2)
+  creado_en          DateTime             @default(now()) @db.Timestamptz(6)
+  actualizado_en     DateTime             @default(now()) @db.Timestamptz(6)
+  esta_activo        Boolean              @default(true)
+  detalle_resultados detalle_resultados[]
+  estudiantes        estudiantes          @relation(fields: [estudiante_id], references: [usuario_id], onDelete: Cascade, onUpdate: NoAction)
+  examenes           examenes             @relation(fields: [examen_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  respuestas_examen  respuestas_examen[]
+
+  @@unique([examen_id, estudiante_id])
+  @@index([estado], map: "idx_intentos_estado")
+  @@index([estudiante_id], map: "idx_intentos_estudiante")
+  @@index([examen_id], map: "idx_intentos_examen")
+  @@schema("bebras")
+}
+
+model notificaciones {
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id     String?           @db.Uuid
+  tipo           tipo_notificacion @default(general)
+  titulo         String            @db.VarChar(200)
+  mensaje        String
+  esta_leida     Boolean           @default(false)
+  enviada_en     DateTime          @default(now()) @db.Timestamptz(6)
+  actualizado_en DateTime          @default(now()) @db.Timestamptz(6)
+  creado_en      DateTime          @default(now()) @db.Timestamptz(6)
+  esta_activo    Boolean           @default(true)
+  usuarios       usuarios?         @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([usuario_id], map: "idx_notificaciones_usuario")
+  @@index([esta_leida], map: "idx_notificaciones_esta_leida")
+  @@schema("bebras")
+}
+
+model opciones_pregunta {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pregunta_id         String                @db.Uuid
+  texto               String
+  es_correcta         Boolean               @default(false)
+  orden               Int                   @default(0) @db.SmallInt
+  actualizado_en      DateTime              @default(now()) @db.Timestamptz(6)
+  creado_en           DateTime              @default(now()) @db.Timestamptz(6)
+  esta_activo         Boolean               @default(true)
+  detalle_resultados  detalle_resultados[]
+  preguntas           preguntas             @relation(fields: [pregunta_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  respuestas_examen   respuestas_examen[]
+  respuestas_practica respuestas_practica[]
+
+  @@schema("bebras")
+}
+
+model pregunta_etiquetas {
+  pregunta_id    String    @db.Uuid
+  etiqueta_id    String    @db.Uuid
+  actualizado_en DateTime  @default(now()) @db.Timestamptz(6)
+  creado_en      DateTime  @default(now()) @db.Timestamptz(6)
+  esta_activo    Boolean   @default(true)
+  etiquetas      etiquetas @relation(fields: [etiqueta_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  preguntas      preguntas @relation(fields: [pregunta_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([pregunta_id, etiqueta_id])
+  @@schema("bebras")
+}
+
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model preguntas {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titulo              String                @db.VarChar(300)
+  contenido           String
+  categoria_id        String?               @db.Uuid
+  dificultad          nivel_dificultad
+  puntaje             Int                   @default(1) @db.SmallInt
+  explicacion         String?
+  esta_activo         Boolean               @default(true)
+  creado_por          String?               @db.Uuid
+  creado_en           DateTime              @default(now()) @db.Timestamptz(6)
+  actualizado_en      DateTime              @default(now()) @db.Timestamptz(6)
+  detalle_resultados  detalle_resultados[]
+  examen_preguntas    examen_preguntas[]
+  opciones_pregunta   opciones_pregunta[]
+  pregunta_etiquetas  pregunta_etiquetas[]
+  categorias          categorias?           @relation(fields: [categoria_id], references: [id], onUpdate: NoAction)
+  usuarios            usuarios?             @relation(fields: [creado_por], references: [id], onUpdate: NoAction)
+  recursos_pregunta   recursos_pregunta[]
+  respuestas_examen   respuestas_examen[]
+  respuestas_practica respuestas_practica[]
+  versiones_pregunta  versiones_pregunta[]
+
+  @@index([categoria_id], map: "idx_preguntas_categoria")
+  @@index([dificultad], map: "idx_preguntas_dificultad")
+  @@index([esta_activo], map: "idx_preguntas_esta_activo")
+  @@schema("bebras")
+}
+
+model profesores {
+  usuario_id        String              @id @db.Uuid
+  institucion_id    String?             @db.Uuid
+  creado_en         DateTime            @default(now()) @db.Timestamptz(6)
+  actualizado_en    DateTime            @default(now()) @db.Timestamptz(6)
+  esta_activo       Boolean             @default(true)
+  instituciones     instituciones?      @relation(fields: [institucion_id], references: [id], onUpdate: NoAction)
+  usuarios          usuarios            @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profesores_grupos profesores_grupos[]
+
+  @@index([institucion_id], map: "idx_profesores_institucion")
+  @@schema("bebras")
+}
+
+model profesores_grupos {
+  profesor_id    String     @db.Uuid
+  grupo_id       String     @db.Uuid
+  asignado_en    DateTime   @default(now()) @db.Timestamptz(6)
+  actualizado_en DateTime   @default(now()) @db.Timestamptz(6)
+  creado_en      DateTime   @default(now()) @db.Timestamptz(6)
+  esta_activo    Boolean    @default(true)
+  grupos         grupos     @relation(fields: [grupo_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profesores     profesores @relation(fields: [profesor_id], references: [usuario_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([profesor_id, grupo_id])
+  @@schema("bebras")
+}
+
+model recursos_pregunta {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pregunta_id    String       @db.Uuid
+  url            String
+  tipo           tipo_recurso @default(imagen)
+  creado_en      DateTime     @default(now()) @db.Timestamptz(6)
+  actualizado_en DateTime     @default(now()) @db.Timestamptz(6)
+  esta_activo    Boolean      @default(true)
+  preguntas      preguntas    @relation(fields: [pregunta_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("bebras")
+}
+
+model registro_accesos {
+  id             BigInt    @id @default(autoincrement())
+  usuario_id     String?   @db.Uuid
+  accion         String    @db.VarChar(200)
+  ip             String?   @db.Inet
+  creado_en      DateTime  @default(now()) @db.Timestamptz(6)
+  actualizado_en DateTime  @default(now()) @db.Timestamptz(6)
+  esta_activo    Boolean   @default(true)
+  usuarios       usuarios? @relation(fields: [usuario_id], references: [id], onUpdate: NoAction)
+
+  @@index([usuario_id], map: "idx_registro_accesos")
+  @@schema("bebras")
+}
+
+model respuestas_examen {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  intento_id        String             @db.Uuid
+  pregunta_id       String             @db.Uuid
+  opcion_id         String?            @db.Uuid
+  esta_marcada      Boolean            @default(false)
+  respondida_en     DateTime           @default(now()) @db.Timestamptz(6)
+  actualizado_en    DateTime           @default(now()) @db.Timestamptz(6)
+  creado_en         DateTime           @default(now()) @db.Timestamptz(6)
+  esta_activo       Boolean            @default(true)
+  intentos_examen   intentos_examen    @relation(fields: [intento_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  opciones_pregunta opciones_pregunta? @relation(fields: [opcion_id], references: [id], onUpdate: NoAction)
+  preguntas         preguntas          @relation(fields: [pregunta_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([intento_id, pregunta_id])
+  @@index([intento_id], map: "idx_respuestas_intento")
+  @@schema("bebras")
+}
+
+model respuestas_practica {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sesion_id         String             @db.Uuid
+  pregunta_id       String             @db.Uuid
+  opcion_id         String?            @db.Uuid
+  es_correcta       Boolean?
+  respondida_en     DateTime           @default(now()) @db.Timestamptz(6)
+  actualizado_en    DateTime           @default(now()) @db.Timestamptz(6)
+  creado_en         DateTime           @default(now()) @db.Timestamptz(6)
+  esta_activo       Boolean            @default(true)
+  opciones_pregunta opciones_pregunta? @relation(fields: [opcion_id], references: [id], onUpdate: NoAction)
+  preguntas         preguntas          @relation(fields: [pregunta_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sesiones_practica sesiones_practica  @relation(fields: [sesion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("bebras")
+}
+
+model sesiones {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id     String   @db.Uuid
+  token          String   @unique @db.VarChar(512)
+  ip             String?  @db.Inet
+  expira_en      DateTime @db.Timestamptz(6)
+  creado_en      DateTime @default(now()) @db.Timestamptz(6)
+  actualizado_en DateTime @default(now()) @db.Timestamptz(6)
+  esta_activo    Boolean  @default(true)
+  usuarios       usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([expira_en], map: "idx_sesiones_expira")
+  @@index([usuario_id], map: "idx_sesiones_usuario")
+  @@schema("bebras")
+}
+
+model sesiones_practica {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  estudiante_id       String                @db.Uuid
+  categoria_id        String?               @db.Uuid
+  dificultad          nivel_dificultad?
+  puntaje             Decimal?              @db.Decimal(6, 2)
+  creado_en           DateTime              @default(now()) @db.Timestamptz(6)
+  actualizado_en      DateTime              @default(now()) @db.Timestamptz(6)
+  esta_activo         Boolean               @default(true)
+  respuestas_practica respuestas_practica[]
+  categorias          categorias?           @relation(fields: [categoria_id], references: [id], onUpdate: NoAction)
+  estudiantes         estudiantes           @relation(fields: [estudiante_id], references: [usuario_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("bebras")
+}
+
+model tokens_auth {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id     String     @db.Uuid
+  token          String     @unique @db.VarChar(255)
+  tipo           tipo_token
+  expira_en      DateTime   @db.Timestamptz(6)
+  usado_en       DateTime?  @db.Timestamptz(6)
+  creado_en      DateTime   @default(now()) @db.Timestamptz(6)
+  actualizado_en DateTime   @default(now()) @db.Timestamptz(6)
+  esta_activo    Boolean    @default(true)
+  usuarios       usuarios   @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([usuario_id], map: "idx_tokens_usuario")
+  @@schema("bebras")
+}
+
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model usuarios {
+  id                        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  correo                    String                      @unique @db.VarChar(255)
+  nombre_usuario            String?                     @unique @db.VarChar(100)
+  contrasena_hash           String                      @db.VarChar(255)
+  rol                       rol_usuario
+  nombres                   String                      @db.VarChar(100)
+  apellidos                 String                      @db.VarChar(100)
+  esta_activo               Boolean                     @default(true)
+  esta_verificado           Boolean                     @default(false)
+  intentos_fallidos         Int                         @default(0)
+  bloqueado_hasta           DateTime?                   @db.Timestamptz(6)
+  ultimo_acceso_en          DateTime?                   @db.Timestamptz(6)
+  ultimo_acceso_ip          String?                     @db.Inet
+  creado_en                 DateTime                    @default(now()) @db.Timestamptz(6)
+  actualizado_en            DateTime                    @default(now()) @db.Timestamptz(6)
+  telefono                  String?                     @db.VarChar(20)
+  auditoria                 auditoria[]
+  coordinadores_institucion coordinadores_institucion[]
+  estudiantes               estudiantes?
+  examenes                  examenes[]
+  notificaciones            notificaciones[]
+  preguntas                 preguntas[]
+  profesores                profesores?
+  registro_accesos          registro_accesos[]
+  sesiones                  sesiones[]
+  tokens_auth               tokens_auth[]
+  versiones_pregunta        versiones_pregunta[]
+
+  @@index([correo], map: "idx_usuarios_correo")
+  @@index([esta_activo], map: "idx_usuarios_esta_activo")
+  @@index([rol], map: "idx_usuarios_rol")
+  @@schema("bebras")
+}
+
+model versiones_pregunta {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pregunta_id    String    @db.Uuid
+  version        Int       @default(1) @db.SmallInt
+  contenido      String
+  datos_extra    Json?
+  creado_por     String?   @db.Uuid
+  creado_en      DateTime  @default(now()) @db.Timestamptz(6)
+  actualizado_en DateTime  @default(now()) @db.Timestamptz(6)
+  esta_activo    Boolean   @default(true)
+  usuarios       usuarios? @relation(fields: [creado_por], references: [id], onUpdate: NoAction)
+  preguntas      preguntas @relation(fields: [pregunta_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([pregunta_id], map: "idx_versiones_pregunta")
+  @@schema("bebras")
+}
+
+enum estado_intento {
+  pendiente
+  en_progreso
+  finalizado
+  cancelado
+
+  @@schema("bebras")
+}
+
+enum nivel_dificultad {
+  facil
+  medio
+  dificil
+
+  @@schema("bebras")
+}
+
+enum rol_usuario {
+  administrador
+  coordinador
+  profesor
+  estudiante
+
+  @@schema("bebras")
+}
+
+enum tipo_notificacion {
+  general
+  resultado
+  recordatorio
+  registro
+  examen
+
+  @@schema("bebras")
+}
+
+enum tipo_recurso {
+  imagen
+  archivo
+
+  @@schema("bebras")
+}
+
+enum tipo_token {
+  verificacion_correo
+  recuperar_contrasena
+
+  @@schema("bebras")
+}

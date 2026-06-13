@@ -1,0 +1,94 @@
+# ------------------------------------------------------------
+# Dependencies
+# ------------------------------------------------------------
+node_modules/
+**/node_modules/
+
+# ------------------------------------------------------------
+# Build outputs
+# ------------------------------------------------------------
+dist/
+build/
+out/
+tmp/
+temp/
+*.tsbuildinfo
+
+# Monorepo specific
+servicios/dist/
+cliente/.next/
+
+# ------------------------------------------------------------
+# Test and coverage artifacts
+# ------------------------------------------------------------
+coverage/
+**/coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# ------------------------------------------------------------
+# Logs and debug files
+# ------------------------------------------------------------
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ------------------------------------------------------------
+# Environment and secrets
+# Keep .env.example tracked, ignore local env files
+# ------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+.env.*
+*.env
+!.env.example
+!*.env.example
+!.env.*.example
+
+# ------------------------------------------------------------
+# Package manager caches
+# ------------------------------------------------------------
+.npm/
+.pnpm-store/
+.yarn/
+
+# ------------------------------------------------------------
+# Framework and tool caches
+# ------------------------------------------------------------
+.cache/
+.turbo/
+.eslintcache
+.stylelintcache
+.next/
+
+# ------------------------------------------------------------
+# IDE and editor
+# ------------------------------------------------------------
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea/
+*.iml
+
+# ------------------------------------------------------------
+# OS generated files
+# ------------------------------------------------------------
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ------------------------------------------------------------
+# Optional local runtime data
+# Uncomment if your team does not version local SQLite DBs
+# ------------------------------------------------------------
+# *.db
+# *.sqlite
+# *.sqlite3

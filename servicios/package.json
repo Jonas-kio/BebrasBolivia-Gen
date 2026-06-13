@@ -1,0 +1,17 @@
+{
+    "private":  true,
+    "devDependencies":  {
+                            "concurrently":  "^9.2.1"
+                        },
+    "name":  "bebras-bolivia-services",
+    "version":  "1.0.0",
+    "scripts":  {
+                    "lint":  "npm --prefix servicio-usuario run lint --if-present",
+                    "format":  "npm --prefix servicio-usuario run format --if-present",
+                    "format:check":  "npm --prefix servicio-usuario run format:check --if-present",
+                    "build":  "npm --prefix servicio-usuario run build --if-present",
+                    "dev:user":  "npm --prefix servicio-usuario run dev",
+                    "dev":  "npm run dev:user",
+                    "test":  "npm --prefix servicio-usuario run test --if-present"
+                }
+}

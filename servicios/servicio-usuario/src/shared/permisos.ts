@@ -1,0 +1,117 @@
+import type { rol_usuario } from '@prisma/client';
+
+/**
+ * Acciones del sistema. Cada endpoint debe requerir al menos una.
+ * Agregar aqui cuando se implemente un nuevo modulo.
+ */
+export enum Accion {
+  // Usuarios
+  CREAR_USUARIO = 'CREAR_USUARIO',
+  ELIMINAR_USUARIO = 'ELIMINAR_USUARIO',
+  ACTIVAR_DESACTIVAR_USUARIO = 'ACTIVAR_DESACTIVAR_USUARIO',
+  LISTAR_USUARIOS = 'LISTAR_USUARIOS',
+  VER_USUARIO = 'VER_USUARIO',
+  EDITAR_USUARIO_PROPIO = 'EDITAR_USUARIO_PROPIO',
+
+  // Roles
+  CAMBIAR_ROL = 'CAMBIAR_ROL',
+  LISTAR_ROLES = 'LISTAR_ROLES',
+
+  // Instituciones
+  CREAR_INSTITUCION = 'CREAR_INSTITUCION',
+  EDITAR_INSTITUCION = 'EDITAR_INSTITUCION',
+  ELIMINAR_INSTITUCION = 'ELIMINAR_INSTITUCION',
+  VER_INSTITUCION = 'VER_INSTITUCION',
+
+  // Grupos
+  GESTIONAR_GRUPOS = 'GESTIONAR_GRUPOS',
+
+  // Banco de preguntas
+  CREAR_PREGUNTA = 'CREAR_PREGUNTA',
+  EDITAR_PREGUNTA = 'EDITAR_PREGUNTA',
+  ELIMINAR_PREGUNTA = 'ELIMINAR_PREGUNTA',
+  VER_PREGUNTA = 'VER_PREGUNTA',
+
+  // Examenes
+  CONFIGURAR_EXAMEN = 'CONFIGURAR_EXAMEN',
+  VER_EXAMEN_ASIGNADO = 'VER_EXAMEN_ASIGNADO',
+  RENDIR_EXAMEN = 'RENDIR_EXAMEN',
+
+  // Practica
+  ACCEDER_PRACTICA = 'ACCEDER_PRACTICA',
+
+  // Resultados
+  VER_ESTADISTICAS_GLOBALES = 'VER_ESTADISTICAS_GLOBALES',
+  VER_REPORTE_INSTITUCION = 'VER_REPORTE_INSTITUCION',
+  VER_REPORTE_GRUPO = 'VER_REPORTE_GRUPO',
+  VER_RESULTADOS_PROPIOS = 'VER_RESULTADOS_PROPIOS',
+
+  // Notificaciones
+  ENVIAR_NOTIFICACION_MASIVA = 'ENVIAR_NOTIFICACION_MASIVA',
+
+  // Certificados
+  DESCARGAR_CERTIFICADO_PROPIO = 'DESCARGAR_CERTIFICADO_PROPIO',
+}
+
+const ADMINISTRADOR: ReadonlySet<Accion> = new Set([
+  Accion.CREAR_USUARIO,
+  Accion.ELIMINAR_USUARIO,
+  Accion.ACTIVAR_DESACTIVAR_USUARIO,
+  Accion.LISTAR_USUARIOS,
+  Accion.VER_USUARIO,
+  Accion.CAMBIAR_ROL,
+  Accion.LISTAR_ROLES,
+  Accion.CREAR_INSTITUCION,
+  Accion.EDITAR_INSTITUCION,
+  Accion.ELIMINAR_INSTITUCION,
+  Accion.VER_INSTITUCION,
+  Accion.GESTIONAR_GRUPOS,
+  Accion.CREAR_PREGUNTA,
+  Accion.EDITAR_PREGUNTA,
+  Accion.ELIMINAR_PREGUNTA,
+  Accion.VER_PREGUNTA,
+  Accion.CONFIGURAR_EXAMEN,
+  Accion.VER_ESTADISTICAS_GLOBALES,
+  Accion.VER_REPORTE_INSTITUCION,
+  Accion.VER_REPORTE_GRUPO,
+  Accion.ENVIAR_NOTIFICACION_MASIVA,
+]);
+
+// Scope real validado por requiereScope() en cada ruta: solo su institucion asignada
+const COORDINADOR: ReadonlySet<Accion> = new Set([
+  Accion.CREAR_USUARIO,
+  Accion.LISTAR_USUARIOS,
+  Accion.VER_USUARIO,
+  Accion.LISTAR_ROLES,
+  Accion.VER_INSTITUCION,
+  Accion.VER_PREGUNTA,
+  Accion.VER_REPORTE_INSTITUCION,
+]);
+
+// Scope real validado por requiereScope() en cada ruta: solo sus grupos asignados
+const PROFESOR: ReadonlySet<Accion> = new Set([
+  Accion.LISTAR_USUARIOS,
+  Accion.VER_USUARIO,
+  Accion.LISTAR_ROLES,
+  Accion.GESTIONAR_GRUPOS,
+  Accion.VER_PREGUNTA,
+  Accion.VER_EXAMEN_ASIGNADO,
+  Accion.VER_REPORTE_GRUPO,
+]);
+
+const ESTUDIANTE: ReadonlySet<Accion> = new Set([
+  Accion.VER_USUARIO,
+  Accion.EDITAR_USUARIO_PROPIO,
+  Accion.RENDIR_EXAMEN,
+  Accion.ACCEDER_PRACTICA,
+  Accion.VER_RESULTADOS_PROPIOS,
+  Accion.DESCARGAR_CERTIFICADO_PROPIO,
+]);
+
+export const PERMISOS_POR_ROL: Readonly<Record<rol_usuario, ReadonlySet<Accion>>> = {
+  administrador: ADMINISTRADOR,
+  coordinador: COORDINADOR,
+  profesor: PROFESOR,
+  estudiante: ESTUDIANTE,
+};
+
