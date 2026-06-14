@@ -1,8 +1,9 @@
-name: CD — Deploy Local
+name: CD - Deploy Local
 
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -10,7 +11,7 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout código
+      - name: Checkout codigo
         uses: actions/checkout@v4
 
       - name: Detener contenedores previos
@@ -20,33 +21,47 @@ jobs:
       - name: Construir y levantar servicios
         run: docker compose up --build -d
 
-      - name: Esperar a que el backend esté listo
+      - name: Esperar a que el backend este listo
         run: |
-          echo "Esperando al backend..."
-          for i in $(seq 1 30); do
-            if curl -s http://localhost:4102/health | grep -q '"ok"'; then
-              echo "Backend listo!"
-              exit 0
-            fi
-            echo "Intento $i/30 — esperando 5s..."
-            sleep 5
-          done
-          echo "ERROR: Backend no respondió a tiempo"
+          Write-Host "Esperando al backend..."
+          for ($i = 1; $i -le 30; $i++) {
+            try {
+              $response = Invoke-RestMethod -Uri "http://localhost:4102/health" -TimeoutSec 5
+              if ($response.status -eq "ok" -or $response.ok -eq $true) {
+                Write-Host "Backend listo!"
+                exit 0
+              }
+            } catch {
+              Write-Host "Backend aun no responde."
+            }
+
+            Write-Host "Intento $i/30 - esperando 5s..."
+            Start-Sleep -Seconds 5
+          }
+
+          Write-Host "ERROR: Backend no respondio a tiempo"
           docker compose logs backend
           exit 1
 
       - name: Verificar que el frontend responde
         run: |
-          echo "Verificando frontend..."
-          for i in $(seq 1 15); do
-            if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 | grep -q "200"; then
-              echo "Frontend listo!"
-              exit 0
-            fi
-            echo "Intento $i/15 — esperando 5s..."
-            sleep 5
-          done
-          echo "WARNING: Frontend no respondió, revisando logs..."
+          Write-Host "Verificando frontend..."
+          for ($i = 1; $i -le 15; $i++) {
+            try {
+              $response = Invoke-WebRequest -Uri "http://localhost:3000" -TimeoutSec 5 -UseBasicParsing
+              if ($response.StatusCode -eq 200) {
+                Write-Host "Frontend listo!"
+                exit 0
+              }
+            } catch {
+              Write-Host "Frontend aun no responde."
+            }
+
+            Write-Host "Intento $i/15 - esperando 5s..."
+            Start-Sleep -Seconds 5
+          }
+
+          Write-Host "WARNING: Frontend no respondio, revisando logs..."
           docker compose logs frontend
 
       - name: Estado final de los servicios
