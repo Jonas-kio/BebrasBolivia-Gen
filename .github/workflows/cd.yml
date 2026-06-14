@@ -6,8 +6,38 @@ on:
   workflow_dispatch:
 
 jobs:
+  ci:
+    name: Integracion continua
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.2'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm run install:all
+
+      - name: Verificar formato
+        run: npm run format:check
+
+      - name: Analisis estatico
+        run: npm run lint
+
+      - name: Ejecutar pruebas
+        run: npm test
+
+      - name: Construir proyecto
+        run: npm run build
+
   deploy:
     name: Deploy en localhost (self-hosted)
+    needs: ci
     runs-on: self-hosted
 
     steps:
