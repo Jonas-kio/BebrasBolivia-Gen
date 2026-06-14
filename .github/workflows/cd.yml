@@ -8,17 +8,16 @@ on:
 jobs:
   ci:
     name: Integracion continua
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux]
 
     steps:
       - name: Checkout codigo
         uses: actions/checkout@v4
 
-      - name: Configurar Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22.22.2'
-          cache: 'npm'
+      - name: Verificar Node.js local
+        run: |
+          node -v
+          npm -v
 
       - name: Instalar dependencias
         run: npm run install:all
@@ -38,60 +37,52 @@ jobs:
   deploy:
     name: Deploy en localhost (self-hosted)
     needs: ci
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux]
 
     steps:
       - name: Checkout codigo
         uses: actions/checkout@v4
 
-      - name: Detener contenedores previos
-        run: docker compose down --remove-orphans
-        continue-on-error: true
-
-      - name: Construir y levantar servicios
-        run: docker compose up --build -d
+      - name: Ejecutar script de despliegue
+        run: |
+          chmod +x scripts/deploy.sh
+          ./scripts/deploy.sh \
+            --db-user "dev_user" \
+            --db-password "dev_password" \
+            --db-name "bebras_bolivia" \
+            --db-port "5432" \
+            --backend-port "4102" \
+            --frontend-port "3000" \
+            --url-cliente "http://localhost:3000" \
+            --next-public-api-url "http://localhost:4102/api/v1"
 
       - name: Esperar a que el backend este listo
         run: |
-          Write-Host "Esperando al backend..."
-          for ($i = 1; $i -le 30; $i++) {
-            try {
-              $response = Invoke-RestMethod -Uri "http://localhost:4102/health" -TimeoutSec 5
-              if ($response.status -eq "ok" -or $response.ok -eq $true) {
-                Write-Host "Backend listo!"
+          echo "Esperando al backend..."
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:4102/health | grep -Eq '"(status|ok)"'; then
+                echo "Backend listo!"
                 exit 0
-              }
-            } catch {
-              Write-Host "Backend aun no responde."
-            }
-
-            Write-Host "Intento $i/30 - esperando 5s..."
-            Start-Sleep -Seconds 5
-          }
-
-          Write-Host "ERROR: Backend no respondio a tiempo"
+            fi
+            echo "Intento $i/30 - esperando 5s..."
+            sleep 5
+          done
+          echo "ERROR: Backend no respondio a tiempo"
           docker compose logs backend
           exit 1
 
       - name: Verificar que el frontend responde
         run: |
-          Write-Host "Verificando frontend..."
-          for ($i = 1; $i -le 15; $i++) {
-            try {
-              $response = Invoke-WebRequest -Uri "http://localhost:3000" -TimeoutSec 5 -UseBasicParsing
-              if ($response.StatusCode -eq 200) {
-                Write-Host "Frontend listo!"
+          echo "Verificando frontend..."
+          for i in $(seq 1 15); do
+            if curl -fsS -o /dev/null http://localhost:3000; then
+                echo "Frontend listo!"
                 exit 0
-              }
-            } catch {
-              Write-Host "Frontend aun no responde."
-            }
-
-            Write-Host "Intento $i/15 - esperando 5s..."
-            Start-Sleep -Seconds 5
-          }
-
-          Write-Host "WARNING: Frontend no respondio, revisando logs..."
+            fi
+            echo "Intento $i/15 - esperando 5s..."
+            sleep 5
+          done
+          echo "WARNING: Frontend no respondio, revisando logs..."
           docker compose logs frontend
 
       - name: Estado final de los servicios
