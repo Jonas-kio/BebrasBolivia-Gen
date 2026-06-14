@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
-import { manejarErrorNegocio, RolControlador } from 'src/controladores/rol-controlador.js';
+import { manejarErrorNegocio, RolControlador } from '../controladores/rol-controlador.js';
 
 import { verificarRol } from '../middlewares/autorizar.js';
 import { resolverIdentidad } from '../middlewares/resolver-identidad.js';

@@ -1,6 +1,6 @@
 import type { usuarios } from '@prisma/client';
 import bcrypt from 'bcrypt';
-import type { ActualizarUsuarioDto } from 'src/dtos/actualizar-usuario.dto';
+import type { ActualizarUsuarioDto } from '../dtos/actualizar-usuario.dto';
 
 import type { ConsultaUsuariosQuery, PaginacionResponse } from '../dtos/consulta-usuarios.dto';
 import type { CrearUsuarioDto } from '../dtos/crear-usuario.dto';
