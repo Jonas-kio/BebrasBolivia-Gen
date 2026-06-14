@@ -1,8 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
 
-import type { CambiarRolDto } from '../dtos/rol.dto.js';
-import { RolServicio } from '../servicios/rol-servicio.js';
-import { ErrorNegocio } from '../utilidades/errores.js';
+import type { CambiarRolDto } from '../dtos/rol.dto';
+import { RolServicio } from '../servicios/rol-servicio';
+import { ErrorNegocio } from '../utilidades/errores';
 
 export class RolControlador {
     constructor(private readonly rolServicio: RolServicio) { }

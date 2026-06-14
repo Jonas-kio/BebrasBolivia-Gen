@@ -1,11 +1,11 @@
 import { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
-import { manejarErrorNegocio, RolControlador } from '../controladores/rol-controlador.js';
+import { manejarErrorNegocio, RolControlador } from '../controladores/rol-controlador';
 
-import { verificarRol } from '../middlewares/autorizar.js';
-import { resolverIdentidad } from '../middlewares/resolver-identidad.js';
-import { RolRepositorio } from '../repositorios/rol-repositorio.js';
-import { RolServicio } from '../servicios/rol-servicio.js';
+import { verificarRol } from '../middlewares/autorizar';
+import { resolverIdentidad } from '../middlewares/resolver-identidad';
+import { RolRepositorio } from '../repositorios/rol-repositorio';
+import { RolServicio } from '../servicios/rol-servicio';
 
 const prisma = new PrismaClient();
 const rolRepositorio = new RolRepositorio(prisma);

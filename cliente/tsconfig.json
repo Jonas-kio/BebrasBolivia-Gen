@@ -9,7 +9,6 @@
     "jsx": "react-jsx",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "ignoreDeprecations": "6.0",
     "strict": true,
     "rootDir": ".",
     "skipLibCheck": true,

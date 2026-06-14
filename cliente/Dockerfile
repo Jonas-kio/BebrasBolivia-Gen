@@ -29,6 +29,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_API_URL=http://localhost:4102/api/v1
+ENV HOSTNAME="0.0.0.0"
+ENV PORT=3000
 
 # Next.js standalone output copies only what's needed
 COPY --from=build /app/.next/standalone ./
