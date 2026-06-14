@@ -1,47 +1,75 @@
 version: '3.8'
 
 services:
-  # BASE DE DATOS
+  # ─────────────────────────────────────────────
+  # BASE DE DATOS — PostgreSQL 15 local
+  # ─────────────────────────────────────────────
   postgres_db:
     image: postgres:15-alpine
     container_name: bebras_db
-    restart: always
+    restart: unless-stopped
     environment:
-      # Estos 3 los define: MODELO BD Y REPOS
-      POSTGRES_USER: dev_user           
-      POSTGRES_PASSWORD: dev_password   
-      POSTGRES_DB: bebras_bolivia       
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: bebras_bolivia
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev_user -d bebras_bolivia"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-  # SECCIÓN DE APLICACIÓN
-  auth-service:
+  # ─────────────────────────────────────────────
+  # BACKEND — servicio-usuario (Express + Prisma)
+  # ─────────────────────────────────────────────
+  backend:
     build:
-      context: .
-      # Define la ruta: MODELO BD Y REPOS
-      dockerfile: servicios/servicio-autenticacion/Dockerfile 
-    container_name: auth_svc
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
+      context: ./servicios/servicio-usuario
+      dockerfile: Dockerfile
+    container_name: bebras_backend
+    restart: unless-stopped
     environment:
-      - NODE_ENV=development            # ESTÁNDARES DE CODIFICACIÓN
-      
-      # 1. Los datos (user/pass) vienen de: MODELO BD Y REPOS
-      # 2. La seguridad de la conexión viene de: DDOS, TLS, INYECCION
-      - DB_URL=postgres://dev_user:dev_password@postgres_db:5432/bebras_bolivia
-      
-      # CERTIFICADOS Y FIRMAS DIGITALES
-
+      NODE_ENV: production
+      USER_SERVICE_PORT: 4102
+      URL_CLIENTE: http://localhost:3000
+      # DATABASE_URL apunta al PostgreSQL local de Docker
+      DATABASE_URL: postgresql://dev_user:dev_password@postgres_db:5432/bebras_bolivia?schema=bebras
     ports:
-      - "3001:3001"
+      - "4102:4102"
     depends_on:
-      - postgres_db
+      postgres_db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4102/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-# RECURSOS ADICIONALES
+  # ─────────────────────────────────────────────
+  # FRONTEND — cliente Next.js
+  # ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./cliente
+      dockerfile: Dockerfile
+    container_name: bebras_frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:4102/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+# ─────────────────────────────────────────────
+# VOLUMES
+# ─────────────────────────────────────────────
 volumes:
   postgres_data:
-
-# REDIS
