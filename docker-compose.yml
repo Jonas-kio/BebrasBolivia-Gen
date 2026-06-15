@@ -4,16 +4,16 @@ services:
     container_name: bebras_db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER:-dev_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-dev_password}
-      POSTGRES_DB: ${DB_NAME:-bebras_bolivia}
+      POSTGRES_USER: ${DB_USER:?DB_USER no definido}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD no definido}
+      POSTGRES_DB: ${DB_NAME:?DB_NAME no definido}
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-dev_user} -d ${DB_NAME:-bebras_bolivia}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:?DB_USER no definido} -d ${DB_NAME:?DB_NAME no definido}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -28,7 +28,7 @@ services:
       NODE_ENV: production
       USER_SERVICE_PORT: ${BACKEND_PORT:-4102}
       URL_CLIENTE: ${URL_CLIENTE:-http://localhost:3000}
-      DATABASE_URL: postgresql://${DB_USER:-dev_user}:${DB_PASSWORD:-dev_password}@postgres_db:5432/${DB_NAME:-bebras_bolivia}?schema=bebras
+      DATABASE_URL: postgresql://${DB_USER:?DB_USER no definido}:${DB_PASSWORD:?DB_PASSWORD no definido}@postgres_db:5432/${DB_NAME:?DB_NAME no definido}?schema=bebras
     ports:
       - "${BACKEND_PORT:-4102}:4102"
     depends_on:
@@ -41,7 +41,7 @@ services:
       retries: 5
       start_period: 30s
 
-  frontend:
+  web-app:
     build:
       context: ./cliente
       dockerfile: Dockerfile

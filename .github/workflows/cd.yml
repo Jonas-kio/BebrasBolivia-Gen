@@ -47,9 +47,9 @@ jobs:
         run: |
           chmod +x scripts/deploy.sh
           ./scripts/deploy.sh \
-            --db-user "dev_user" \
-            --db-password "dev_password" \
-            --db-name "bebras_bolivia" \
+            --db-user "${{ secrets.DB_USER }}" \
+            --db-password "${{ secrets.DB_PASSWORD }}" \
+            --db-name "${{ secrets.DB_NAME }}" \
             --db-port "5432" \
             --backend-port "4102" \
             --frontend-port "3000" \
@@ -83,7 +83,7 @@ jobs:
             sleep 5
           done
           echo "WARNING: Frontend no respondio, revisando logs..."
-          docker compose logs frontend
+          docker compose logs web-app
 
       - name: Estado final de los servicios
         run: docker compose ps
